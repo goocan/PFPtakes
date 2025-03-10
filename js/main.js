@@ -1,17 +1,20 @@
-/* main.js
-   Creates a basic 3D animated airplane using Three.js
-*/
+// js/main.js
 
-let scene, camera, renderer, plane;
+let scene, camera, renderer;
 
 function init() {
   const container = document.getElementById('plane-container');
   
   // Create scene and camera
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x87CEEB); // Sky blue
+  scene.background = new THREE.Color(0x87CEEB); // Sky blue background
   
-  camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+  camera = new THREE.PerspectiveCamera(
+    75,
+    container.clientWidth / container.clientHeight,
+    0.1,
+    1000
+  );
   camera.position.z = 5;
   
   // Create renderer
@@ -19,7 +22,7 @@ function init() {
   renderer.setSize(container.clientWidth, container.clientHeight);
   container.appendChild(renderer.domElement);
   
-  // Add lights
+  // Add lighting
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
   scene.add(ambientLight);
   
@@ -27,37 +30,59 @@ function init() {
   directionalLight.position.set(5, 10, 7.5);
   scene.add(directionalLight);
   
-  // Create a simple airplane model
-  plane = new THREE.Group();
+  // Create a heart shape using Bézier curves
+  const x = 0, y = 0;
+  const heartShape = new THREE.Shape();
+  heartShape.moveTo(x + 5, y + 5);
+  heartShape.bezierCurveTo(x + 5, y + 5, x + 4, y, x, y);
+  heartShape.bezierCurveTo(x - 6, y, x - 6, y + 7, x - 6, y + 7);
+  heartShape.bezierCurveTo(x - 6, y + 11, x - 3, y + 15.4, x + 5, y + 19);
+  heartShape.bezierCurveTo(x + 12, y + 15.4, x + 16, y + 11, x + 16, y + 7);
+  heartShape.bezierCurveTo(x + 16, y + 7, x + 16, y, x + 10, y);
+  heartShape.bezierCurveTo(x + 7, y, x + 5, y + 5, x + 5, y + 5);
   
-  // Fuselage: cylinder rotated horizontally
-  const fuselageGeometry = new THREE.CylinderGeometry(0.1, 0.1, 2, 16);
-  const fuselageMaterial = new THREE.MeshPhongMaterial({ color: 0x5555ff });
-  const fuselage = new THREE.Mesh(fuselageGeometry, fuselageMaterial);
-  fuselage.rotation.z = Math.PI / 2;
-  plane.add(fuselage);
+  // Extrude settings for 3D depth
+  const extrudeSettings = {
+    steps: 2,
+    depth: 1,
+    bevelEnabled: true,
+    bevelThickness: 0.5,
+    bevelSize: 0.5,
+    bevelOffset: 0,
+    bevelSegments: 2
+  };
   
-  // Wing: box geometry
-  const wingGeometry = new THREE.BoxGeometry(0.1, 1, 0.05);
-  const wingMaterial = new THREE.MeshPhongMaterial({ color: 0xff5555 });
-  const wing = new THREE.Mesh(wingGeometry, wingMaterial);
-  wing.position.set(0, 0, 0);
-  plane.add(wing);
+  // Create the extruded geometry and center it
+  const heartGeometry = new THREE.ExtrudeGeometry(heartShape, extrudeSettings);
+  heartGeometry.center();
   
-  // Tail: smaller box geometry
-  const tailGeometry = new THREE.BoxGeometry(0.05, 0.3, 0.05);
-  const tailMaterial = new THREE.MeshPhongMaterial({ color: 0x55ff55 });
-  const tail = new THREE.Mesh(tailGeometry, tailMaterial);
-  tail.position.set(-0.9, 0.2, 0);
-  plane.add(tail);
+  // Create heart mesh with a fun, shiny pink material
+  const heartMaterial = new THREE.MeshPhongMaterial({
+    color: 0xff1493,
+    shininess: 100
+  });
+  const heartMesh = new THREE.Mesh(heartGeometry, heartMaterial);
   
-  // Add the airplane to the scene
-  scene.add(plane);
+  // Scale the heart down to fit nicely in the scene
+  heartMesh.scale.set(0.2, 0.2, 0.2);
   
-  // Start animation loop
+  // Add the heart to the scene
+  scene.add(heartMesh);
+  
+  // Animate the heart: gentle rotation and a bobbing motion
+  function animate() {
+    requestAnimationFrame(animate);
+    
+    heartMesh.rotation.y += 0.01;
+    heartMesh.rotation.x += 0.005;
+    heartMesh.position.y = Math.sin(Date.now() * 0.002) * 0.5;
+    
+    renderer.render(scene, camera);
+  }
+  
   animate();
   
-  // Resize listener
+  // Adjust scene on window resize
   window.addEventListener('resize', onWindowResize, false);
 }
 
@@ -66,17 +91,6 @@ function onWindowResize() {
   camera.aspect = container.clientWidth / container.clientHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(container.clientWidth, container.clientHeight);
-}
-
-function animate() {
-  requestAnimationFrame(animate);
-  
-  // Animate the airplane with a gentle rotation and horizontal movement
-  plane.rotation.y += 0.01;
-  plane.rotation.z += 0.005;
-  plane.position.x = Math.sin(Date.now() * 0.001) * 0.5;
-  
-  renderer.render(scene, camera);
 }
 
 init();
